@@ -1,0 +1,97 @@
+<div class="data-management-container">
+  <p-toast></p-toast>
+
+  <h2 class="page-title">Data Management</h2>
+
+  <div class="grid">
+    <div class="col-12 md:col-4">
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <i class="pi pi-download"></i>
+            <h3>Export Data</h3>
+          </div>
+        </ng-template>
+        
+        <div class="card-content">
+          <p>Download all your data as a JSON file for backup or transfer to another device.</p>
+          
+          <button 
+            pButton 
+            type="button" 
+            label="Export to JSON" 
+            icon="pi pi-download" 
+            class="p-button-success w-full"
+            (click)="exportData()"></button>
+        </div>
+      </p-card>
+    </div>
+
+    <div class="col-12 md:col-4">
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <i class="pi pi-upload"></i>
+            <h3>Import Data</h3>
+          </div>
+        </ng-template>
+        
+        <div class="card-content">
+          <p>Upload a previously exported JSON file to restore your data.</p>
+
+          <p-fileUpload 
+            mode="basic" 
+            chooseLabel="Import from JSON"
+            chooseIcon="pi pi-upload"
+            accept=".json"
+            [auto]="true"
+            [customUpload]="true"
+            (uploadHandler)="onFileSelect($event)"
+            styleClass="w-full">
+          </p-fileUpload>
+        </div>
+      </p-card>
+    </div>
+
+    <div class="col-12 md:col-4">
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <i class="pi pi-refresh"></i>
+            <h3>Reset Data</h3>
+          </div>
+        </ng-template>
+        
+        <div class="card-content">
+          <p>Clear all data and regenerate the 10-year projection from default values.</p>
+          
+          <button 
+            pButton 
+            type="button" 
+            label="Reset to Default" 
+            icon="pi pi-refresh" 
+            class="p-button-warning w-full"
+            (click)="resetData()"></button>
+        </div>
+      </p-card>
+    </div>
+  </div>
+
+  <div class="grid mt-4">
+    <div class="col-12">
+      <p-card styleClass="info-card">
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <i class="pi pi-info-circle"></i>
+            <h3>About Your Data</h3>
+          </div>
+        </ng-template>
+        
+        <div class="card-content">
+          <p>Your data is stored locally in your browser (LocalStorage). It never leaves your device. Use Export/Import to transfer data between devices or for backups.</p>
+        </div>
+      </p-card>
+    </div>
+  </div>
+</div>
+

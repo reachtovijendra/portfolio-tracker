@@ -1,0 +1,82 @@
+.data-management-container {
+  padding: 1rem;
+
+  .page-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-header {
+    padding: 1.5rem 1.5rem 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    i {
+      font-size: 1.5rem;
+      color: var(--primary-color);
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+  }
+
+  .card-content {
+    p {
+      color: var(--text-color-secondary);
+      margin-bottom: 1rem;
+    }
+
+    ul {
+      margin: 0 0 1.5rem 0;
+      padding-left: 1.5rem;
+      color: var(--text-color-secondary);
+
+      li {
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    h4 {
+      color: var(--primary-color);
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+  }
+
+  .info-card {
+    ::ng-deep .p-card-body {
+      background: var(--blue-50);
+      border-left: 4px solid var(--blue-500);
+    }
+  }
+
+  ::ng-deep {
+    .p-card {
+      height: 100%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+      .p-card-body {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .p-card-content {
+        flex: 1;
+      }
+    }
+
+    .p-fileupload {
+      .p-button {
+        width: 100%;
+      }
+    }
+  }
+}
+

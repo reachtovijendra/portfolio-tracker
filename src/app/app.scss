@@ -1,0 +1,96 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-header {
+  background: var(--primary-color);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-content {
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+
+  h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: white;
+  }
+
+  i {
+    color: white;
+  }
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+
+  i {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    
+    &.pi-sun {
+      color: #fbbf24;
+    }
+    
+    &.pi-moon {
+      color: #a5b4fc;
+    }
+  }
+
+  ::ng-deep .p-toggleswitch {
+    .p-toggleswitch-slider {
+      background: rgba(255, 255, 255, 0.3);
+      
+      &:before {
+        background: white;
+      }
+    }
+    
+    &.p-toggleswitch-checked .p-toggleswitch-slider {
+      background: #6366f1;
+    }
+  }
+}
+
+.app-content {
+  flex: 1;
+  background: var(--surface-ground);
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    padding: 0.5rem 1rem;
+  }
+
+  .logo-section {
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+}
+
