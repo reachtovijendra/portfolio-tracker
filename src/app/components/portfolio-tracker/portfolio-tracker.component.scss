@@ -103,6 +103,13 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.table-container {
+  flex: 1;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 200px;
 
   ::ng-deep {
     .p-confirm-dialog {
@@ -504,12 +511,187 @@
 }
 
 @media (max-width: 768px) {
+  .portfolio-tracker-container {
+    padding: 0.5rem;
+  }
+
+  .action-bar {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    button {
+      font-size: 0.75rem;
+      padding: 0.4rem 0.6rem;
+
+      .p-button-label {
+        font-size: 0.75rem;
+      }
+    }
+  }
+
+  // Make table wrapper scrollable
+  ::ng-deep .p-datatable-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  ::ng-deep .p-datatable {
+    .p-datatable-thead > tr > th,
+    .p-datatable-tbody > tr > td {
+      padding: 0.4rem 0.3rem;
+      font-size: 0.7rem;
+    }
+
+    .p-datatable-thead > tr > th {
+      white-space: nowrap;
+    }
+  }
+
+  .year-filter-header {
+    flex-direction: column;
+    gap: 0.25rem;
+
+    ::ng-deep .p-multiselect {
+      width: 100%;
+      min-width: unset;
+    }
+  }
+
+  .dual-cell {
+    padding: 0.25rem !important;
+  }
+
+  .dual-value {
+    gap: 0.15rem;
+
+    .target-value {
+      font-size: 0.65rem;
+    }
+
+    .actual-value {
+      font-size: 0.65rem;
+    }
+  }
+
+  .actual-input-wrapper {
+    ::ng-deep .p-inputnumber {
+      width: 100%;
+      
+      input {
+        width: 100%;
+        min-width: 50px;
+        font-size: 0.7rem;
+        padding: 0.25rem;
+      }
+    }
+  }
+
+  .month-cell {
+    .month-name {
+      font-size: 0.7rem;
+    }
+
+    .clear-row-icon {
+      font-size: 0.7rem;
+    }
+  }
+
   .summary-footer {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+
+    .summary-item {
+      .label, .value {
+        font-size: 0.75rem;
+      }
+    }
+  }
+
+  .actual-summary {
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+
+    h3 {
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .actual-summary-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .actual-item {
+      .label {
+        font-size: 0.7rem;
+      }
+
+      .value {
+        font-size: 0.9rem;
+
+        &.highlight {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+
+  .confirm-modal {
+    min-width: unset;
+    width: 90vw;
+    margin: 1rem;
+
+    .confirm-header {
+      font-size: 1rem;
+      padding: 0.75rem 1rem;
+    }
+
+    .confirm-body {
+      padding: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .confirm-footer {
+      padding: 0.75rem 1rem;
+      flex-wrap: wrap;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .action-bar {
+    justify-content: center;
+    
+    button {
+      flex: 1;
+      min-width: 80px;
+      
+      ::ng-deep .p-button-icon {
+        display: none;
+      }
+    }
   }
 
   .actual-summary .actual-summary-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
+  }
+
+  ::ng-deep .p-datatable {
+    .p-datatable-thead > tr > th,
+    .p-datatable-tbody > tr > td {
+      padding: 0.3rem 0.2rem;
+      font-size: 0.65rem;
+    }
+  }
+
+  .dual-value {
+    .target-value,
+    .actual-value {
+      font-size: 0.6rem;
+    }
   }
 }
