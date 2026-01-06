@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, combineLatest } from 'rxjs';
 import * as XLSX from 'xlsx';
 
 import { TableModule } from 'primeng/table';
@@ -9,6 +9,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ToastModule } from 'primeng/toast';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 
 import { TargetEntry } from '../../models';
@@ -30,7 +31,8 @@ interface PortfolioRow extends TargetEntry {
     ButtonModule,
     InputNumberModule,
     ToastModule,
-    MultiSelectModule
+    MultiSelectModule,
+    ProgressSpinnerModule
   ],
   providers: [MessageService],
   templateUrl: './portfolio-tracker.component.html',
@@ -44,6 +46,7 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
   rowToClear: PortfolioRow | null = null;
   yearOptions: { label: string; value: number }[] = [];
   selectedYears: number[] = [];
+  isLoading = true;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -52,13 +55,26 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    this.stockTrackerService.targets$
+    // Subscribe to loading state
+    this.stockTrackerService.loading$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(targets => {
-        if (targets.length === 0) {
-          this.generateTenYearProjection();
-        } else {
-          this.loadPortfolioData(targets);
+      .subscribe(loading => {
+        this.isLoading = loading;
+      });
+
+    // Subscribe to both targets and actuals
+    combineLatest([
+      this.stockTrackerService.targets$,
+      this.stockTrackerService.actuals$
+    ])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([targets, actuals]) => {
+        if (!this.isLoading) {
+          if (targets.length === 0) {
+            this.generateTenYearProjection();
+          } else {
+            this.loadPortfolioData(targets, actuals);
+          }
         }
       });
   }
@@ -76,12 +92,12 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     this.showConfirmModal = false;
   }
 
-  confirmClear(): void {
+  async confirmClear(): Promise<void> {
     this.portfolioData = [];
     this.filteredData = [];
     this.selectedYears = [];
-    this.stockTrackerService.clearAllData();
-    this.generateTenYearProjection();
+    await this.stockTrackerService.clearAllData();
+    await this.generateTenYearProjection();
     this.showConfirmModal = false;
     this.messageService.add({
       severity: 'success',
@@ -91,7 +107,7 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     });
   }
 
-  private generateTenYearProjection(): void {
+  private async generateTenYearProjection(): Promise<void> {
     const targets: TargetEntry[] = [];
     
     const startingInvestment = 100000;
@@ -105,7 +121,7 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     
     for (let i = 1; i <= 120; i++) {
       const year = startYear + Math.floor((i - 1) / 12);
-      const monthNumber = ((i - 1) % 12) + 1; // 1-12 for each year
+      const monthNumber = ((i - 1) % 12) + 1;
       
       const investment = previousTotal;
       const added = monthlyAddition;
@@ -132,12 +148,10 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
       previousPrincipal = principal;
     }
     
-    this.stockTrackerService.setTargets(targets);
+    await this.stockTrackerService.setTargets(targets);
   }
 
-  private loadPortfolioData(targets: TargetEntry[]): void {
-    const actuals = this.stockTrackerService.getActuals();
-    
+  private loadPortfolioData(targets: TargetEntry[], actuals: any[]): void {
     const actualsMap = new Map<string, { investment: number, added: number, total: number }>();
     actuals.forEach(a => {
       actualsMap.set(`${a.year}-${a.month}`, { 
@@ -152,7 +166,6 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
         const key = `${target.year}-${target.month}`;
         const actual = actualsMap.get(key);
 
-        // Convert 0 to null so placeholder shows
         const actualInvestment = actual?.investment;
         const actualAdded = actual?.added;
         const actualTotal = actual?.total;
@@ -169,16 +182,13 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
         return a.month - b.month;
       });
 
-    // Set up year filter options
     const uniqueYears = [...new Set(this.portfolioData.map(row => row.year))].sort();
     this.yearOptions = uniqueYears.map(year => ({ label: String(year), value: year }));
     
-    // Default to 2025 if no selection and 2025 exists
     if (this.selectedYears.length === 0 && uniqueYears.includes(2025)) {
       this.selectedYears = [2025];
     }
     
-    // Initialize filtered data
     this.applyYearFilter();
   }
 
@@ -194,8 +204,7 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     }
   }
 
-  onActualChange(row: PortfolioRow, showToast: boolean = true): void {
-    // Save to actuals when any value changes
+  async onActualChange(row: PortfolioRow, showToast: boolean = true): Promise<void> {
     const existingActuals = this.stockTrackerService.getActuals();
     const existingIndex = existingActuals.findIndex(
       a => a.year === row.year && a.month === row.month
@@ -220,41 +229,45 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
       total: row.actualTotal ?? 0
     };
 
-    if (existingIndex >= 0) {
-      this.stockTrackerService.updateActual(actualEntry);
-    } else {
-      this.stockTrackerService.addActual(actualEntry);
-    }
+    try {
+      if (existingIndex >= 0) {
+        await this.stockTrackerService.updateActual(actualEntry);
+      } else {
+        await this.stockTrackerService.addActual(actualEntry);
+      }
 
-    // Auto-populate next month's investment with this month's total
-    if (row.actualTotal !== null) {
-      this.updateNextMonthInvestment(row);
-    }
+      if (row.actualTotal !== null) {
+        await this.updateNextMonthInvestment(row);
+      }
 
-    if (showToast) {
-      this.messageService.add({ 
-        severity: 'success', 
-        summary: 'Saved', 
-        detail: `Year ${row.year}, Month ${row.month} updated`,
-        life: 1500
+      if (showToast) {
+        this.messageService.add({ 
+          severity: 'success', 
+          summary: 'Saved', 
+          detail: `Year ${row.year}, Month ${row.month} updated`,
+          life: 1500
+        });
+      }
+    } catch (error) {
+      console.error('Error saving actual:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to save data. Please try again.',
+        life: 3000
       });
     }
   }
 
-  private updateNextMonthInvestment(currentRow: PortfolioRow): void {
-    // Find the next month's row
+  private async updateNextMonthInvestment(currentRow: PortfolioRow): Promise<void> {
     const currentIndex = this.portfolioData.findIndex(
       r => r.year === currentRow.year && r.month === currentRow.month
     );
     
     if (currentIndex >= 0 && currentIndex < this.portfolioData.length - 1) {
       const nextRow = this.portfolioData[currentIndex + 1];
-      
-      // Set next month's actual investment to this month's actual total
       nextRow.actualInvestment = currentRow.actualTotal;
-      
-      // Save the next month's data silently
-      this.onActualChange(nextRow, false);
+      await this.onActualChange(nextRow, false);
     }
   }
 
@@ -330,7 +343,6 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     return 'has-data';
   }
 
-  // Actual Performance Summary Methods
   getFilledRowsCount(): number {
     return this.filteredData.filter(row => 
       row.actualTotal !== null && row.actualInvestment !== null
@@ -343,7 +355,6 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     );
     if (filledRows.length === 0) return 0;
     
-    // Get the latest row's actual total investment (cumulative)
     const latestRow = filledRows[filledRows.length - 1];
     return (latestRow.actualInvestment ?? 0) + (latestRow.actualAdded ?? 0);
   }
@@ -393,13 +404,11 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     if (monthsWithData === 0) return '0.00';
     
     const overallReturn = parseFloat(this.getOverallReturnPercent());
-    // Annualize: (overall return / months) * 12
     const avgYearlyReturn = (overallReturn / monthsWithData) * 12;
     return avgYearlyReturn.toFixed(2);
   }
 
   isFirstMonth(row: PortfolioRow): boolean {
-    // Only January 2025 (the first month) should be editable
     return row.year === 2025 && row.month === 1;
   }
 
@@ -413,42 +422,23 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     this.rowToClear = null;
   }
 
-  confirmRowClear(): void {
+  async confirmRowClear(): Promise<void> {
     if (!this.rowToClear) return;
 
     const row = this.rowToClear;
     
-    // Clear the actual values for this row
     row.actualInvestment = null;
     row.actualAdded = null;
     row.actualTotal = null;
 
-    // Remove from stored actuals
     const existingActuals = this.stockTrackerService.getActuals();
-    const filteredActuals = existingActuals.filter(
-      a => !(a.year === row.year && a.month === row.month)
+    const actualToDelete = existingActuals.find(
+      a => a.year === row.year && a.month === row.month
     );
     
-    // Update storage by clearing and re-adding
-    this.stockTrackerService.clearAllData();
-    filteredActuals.forEach(actual => {
-      this.stockTrackerService.addActual(actual);
-    });
-
-    // Re-save targets
-    const targets = this.portfolioData.map(r => ({
-      id: r.id,
-      year: r.year,
-      month: r.month,
-      investment: r.investment,
-      added: r.added,
-      principal: r.principal,
-      totalInvestment: r.totalInvestment,
-      returnPercent: r.returnPercent,
-      profit: r.profit,
-      total: r.total
-    }));
-    this.stockTrackerService.setTargets(targets);
+    if (actualToDelete?.id) {
+      await this.stockTrackerService.deleteActual(actualToDelete.id);
+    }
 
     this.showRowClearModal = false;
     
@@ -469,16 +459,14 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     const file = input.files[0];
     const reader = new FileReader();
 
-    reader.onload = (e: ProgressEvent<FileReader>) => {
+    reader.onload = async (e: ProgressEvent<FileReader>) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         
-        // Get first sheet
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        // Convert to JSON
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
         
         if (jsonData.length === 0) {
@@ -491,28 +479,24 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // Map month names to numbers
         const monthMap: { [key: string]: number } = {
           'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
           'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
         };
 
-        // Process imported data
         let importedCount = 0;
-        jsonData.forEach(row => {
+        for (const row of jsonData) {
           const year = row['Year'];
           const monthStr = row['Month'];
           const month = typeof monthStr === 'string' ? monthMap[monthStr] : monthStr;
 
-          if (!year || !month) return;
+          if (!year || !month) continue;
 
-          // Find matching row in portfolioData
           const existingRow = this.portfolioData.find(
             p => p.year === year && p.month === month
           );
 
           if (existingRow) {
-            // Update actual values if present in import
             if (row['Actual Investment'] !== null && row['Actual Investment'] !== undefined && row['Actual Investment'] !== '') {
               existingRow.actualInvestment = Number(row['Actual Investment']);
             }
@@ -523,13 +507,11 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
               existingRow.actualTotal = Number(row['Actual Total']);
             }
 
-            // Save to service (silent - no toast)
-            this.onActualChange(existingRow, false);
+            await this.onActualChange(existingRow, false);
             importedCount++;
           }
-        });
+        }
 
-        // Reset file input
         input.value = '';
 
         this.messageService.add({
@@ -555,7 +537,6 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
   }
 
   exportToExcel(): void {
-    // Prepare data for export
     const exportData = this.portfolioData.map(row => {
       const actualTotalInvestment = (row.actualInvestment ?? 0) + (row.actualAdded ?? 0);
       const actualProfit = row.actualTotal ? row.actualTotal - actualTotalInvestment : null;
@@ -585,39 +566,35 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
       };
     });
 
-    // Create workbook and worksheet
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Portfolio Data');
 
-    // Set column widths
     const colWidths = [
-      { wch: 6 },   // Year
-      { wch: 8 },   // Month
-      { wch: 18 },  // Target Investment
-      { wch: 18 },  // Actual Investment
-      { wch: 14 },  // Target Added
-      { wch: 14 },  // Actual Added
-      { wch: 16 },  // Target Principal
-      { wch: 16 },  // Actual Principal
-      { wch: 20 },  // Target Total Invested
-      { wch: 20 },  // Actual Total Invested
-      { wch: 14 },  // Target Return %
-      { wch: 14 },  // Actual Return %
-      { wch: 14 },  // Target Profit
-      { wch: 14 },  // Actual Profit
-      { wch: 14 },  // Target Total
-      { wch: 14 },  // Actual Total
-      { wch: 12 }   // Variance
+      { wch: 6 },
+      { wch: 8 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 12 }
     ];
     worksheet['!cols'] = colWidths;
 
-    // Generate filename with date
     const today = new Date();
     const dateStr = today.toISOString().split('T')[0];
     const filename = `Portfolio_Data_${dateStr}.xlsx`;
 
-    // Save file
     XLSX.writeFile(workbook, filename);
 
     this.messageService.add({

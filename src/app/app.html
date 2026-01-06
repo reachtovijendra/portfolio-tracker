@@ -5,15 +5,76 @@
         <i class="pi pi-chart-line" style="font-size: 2rem;"></i>
         <h1>{{ title }}</h1>
       </div>
-      <div class="theme-toggle">
-        <i class="pi pi-sun"></i>
-        <p-toggleswitch [(ngModel)]="darkMode" (onChange)="toggleDarkMode()"></p-toggleswitch>
-        <i class="pi pi-moon"></i>
+      <div class="header-actions">
+        <div class="theme-toggle">
+          <i class="pi pi-sun"></i>
+          <p-toggleswitch [(ngModel)]="darkMode" (onChange)="toggleDarkMode()"></p-toggleswitch>
+          <i class="pi pi-moon"></i>
+        </div>
+        
+        <!-- User Authentication -->
+        @if (user) {
+          <div class="user-section">
+            <p-avatar 
+              [image]="user.photoURL || ''" 
+              [label]="user.photoURL ? '' : (user.displayName?.charAt(0) || 'U')"
+              shape="circle"
+              size="normal"
+              [style]="{ cursor: 'pointer' }">
+            </p-avatar>
+            <span class="user-name">{{ (user?.displayName ?? '').split(' ')[0] }}</span>
+            <p-button 
+              icon="pi pi-sign-out" 
+              [rounded]="true" 
+              [text]="true" 
+              severity="secondary"
+              (click)="signOut()"
+              pTooltip="Sign Out">
+            </p-button>
+          </div>
+        } @else {
+          <p-button 
+            label="Sign in with Google" 
+            icon="pi pi-google" 
+            (click)="signIn()"
+            [outlined]="true">
+          </p-button>
+        }
       </div>
     </div>
   </header>
 
   <main class="app-content">
-    <router-outlet />
+    @if (user) {
+      <router-outlet />
+    } @else {
+      <div class="login-prompt">
+        <div class="login-card">
+          <i class="pi pi-chart-line login-icon"></i>
+          <h2>Welcome to Stock Tracker</h2>
+          <p>Sign in to track your portfolio across all your devices</p>
+          <p-button 
+            label="Sign in with Google" 
+            icon="pi pi-google" 
+            (click)="signIn()"
+            size="large">
+          </p-button>
+          <div class="features">
+            <div class="feature">
+              <i class="pi pi-sync"></i>
+              <span>Sync across devices</span>
+            </div>
+            <div class="feature">
+              <i class="pi pi-lock"></i>
+              <span>Private & secure</span>
+            </div>
+            <div class="feature">
+              <i class="pi pi-cloud"></i>
+              <span>Cloud backup</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
   </main>
 </div>

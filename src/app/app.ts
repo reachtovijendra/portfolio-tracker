@@ -1,21 +1,39 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser, DOCUMENT } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, OnInit, Inject, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser, DOCUMENT, CommonModule } from '@angular/common';
+import { RouterOutlet } from '@angular/router';
 import { MenubarModule } from 'primeng/menubar';
-import { CommonModule } from '@angular/common';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { ButtonModule } from 'primeng/button';
+import { AvatarModule } from 'primeng/avatar';
+import { MenuModule } from 'primeng/menu';
 import { FormsModule } from '@angular/forms';
+import { User } from '@angular/fire/auth';
+import { AuthService } from './services';
+import { MenuItem } from 'primeng/api';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, MenubarModule, ToggleSwitchModule, FormsModule],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    MenubarModule,
+    ToggleSwitchModule,
+    ButtonModule,
+    AvatarModule,
+    MenuModule,
+    FormsModule
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
 export class App implements OnInit {
+  private authService = inject(AuthService);
+
   title = 'Stock Tracker';
   darkMode = true;
+  user: User | null = null;
+  userMenuItems: MenuItem[] = [];
 
   constructor(
     @Inject(DOCUMENT) private document: Document,
@@ -25,9 +43,40 @@ export class App implements OnInit {
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       const savedTheme = localStorage.getItem('darkMode');
-      // Default to dark mode if no preference saved
       this.darkMode = savedTheme === null ? true : savedTheme === 'true';
       this.applyTheme();
+    }
+
+    this.authService.user$.subscribe(user => {
+      this.user = user;
+      this.userMenuItems = [
+        {
+          label: user?.displayName || 'User',
+          items: [
+            {
+              label: 'Sign Out',
+              icon: 'pi pi-sign-out',
+              command: () => this.signOut()
+            }
+          ]
+        }
+      ];
+    });
+  }
+
+  async signIn(): Promise<void> {
+    try {
+      await this.authService.signInWithGoogle();
+    } catch (error) {
+      console.error('Sign in failed:', error);
+    }
+  }
+
+  async signOut(): Promise<void> {
+    try {
+      await this.authService.signOut();
+    } catch (error) {
+      console.error('Sign out failed:', error);
     }
   }
 

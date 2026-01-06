@@ -1,24 +1,85 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { Firestore, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from '@angular/fire/firestore';
 import { TargetEntry, ActualEntry } from '../models';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StockTrackerService {
-  private readonly TARGETS_KEY = 'stockTracker_targets';
-  private readonly ACTUALS_KEY = 'stockTracker_actuals';
-  private readonly VERSION_KEY = 'stockTracker_version';
-  private readonly CURRENT_VERSION = '1.0.0';
+  private firestore = inject(Firestore);
+  private authService = inject(AuthService);
 
   private targetsSubject = new BehaviorSubject<TargetEntry[]>([]);
   private actualsSubject = new BehaviorSubject<ActualEntry[]>([]);
+  private loadingSubject = new BehaviorSubject<boolean>(true);
 
   public targets$: Observable<TargetEntry[]> = this.targetsSubject.asObservable();
   public actuals$: Observable<ActualEntry[]> = this.actualsSubject.asObservable();
+  public loading$: Observable<boolean> = this.loadingSubject.asObservable();
+
+  private unsubscribeTargets: (() => void) | null = null;
+  private unsubscribeActuals: (() => void) | null = null;
 
   constructor() {
-    this.loadFromStorage();
+    // Subscribe to auth state changes
+    this.authService.user$.subscribe(user => {
+      if (user) {
+        this.subscribeToUserData(user.uid);
+      } else {
+        this.unsubscribeFromData();
+        this.targetsSubject.next([]);
+        this.actualsSubject.next([]);
+        this.loadingSubject.next(false);
+      }
+    });
+  }
+
+  private subscribeToUserData(userId: string): void {
+    this.loadingSubject.next(true);
+
+    // Subscribe to targets collection
+    const targetsRef = collection(this.firestore, `users/${userId}/targets`);
+    this.unsubscribeTargets = onSnapshot(targetsRef, (snapshot) => {
+      const targets: TargetEntry[] = [];
+      snapshot.forEach(doc => {
+        targets.push({ id: doc.id, ...doc.data() } as TargetEntry);
+      });
+      // Sort by year and month
+      targets.sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        return a.month - b.month;
+      });
+      this.targetsSubject.next(targets);
+      this.loadingSubject.next(false);
+    });
+
+    // Subscribe to actuals collection
+    const actualsRef = collection(this.firestore, `users/${userId}/actuals`);
+    this.unsubscribeActuals = onSnapshot(actualsRef, (snapshot) => {
+      const actuals: ActualEntry[] = [];
+      snapshot.forEach(doc => {
+        actuals.push({ id: doc.id, ...doc.data() } as ActualEntry);
+      });
+      // Sort by year and month
+      actuals.sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        return a.month - b.month;
+      });
+      this.actualsSubject.next(actuals);
+    });
+  }
+
+  private unsubscribeFromData(): void {
+    if (this.unsubscribeTargets) {
+      this.unsubscribeTargets();
+      this.unsubscribeTargets = null;
+    }
+    if (this.unsubscribeActuals) {
+      this.unsubscribeActuals();
+      this.unsubscribeActuals = null;
+    }
   }
 
   // Target Entry Methods
@@ -26,23 +87,31 @@ export class StockTrackerService {
     return this.targetsSubject.value;
   }
 
-  addTarget(entry: TargetEntry): void {
-    const targets = [...this.targetsSubject.value];
-    entry.id = this.generateId();
-    targets.push(entry);
-    this.updateTargets(targets);
+  async addTarget(entry: TargetEntry): Promise<void> {
+    const userId = this.authService.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
+
+    const id = this.generateId();
+    entry.id = id;
+    const docRef = doc(this.firestore, `users/${userId}/targets/${id}`);
+    await setDoc(docRef, this.cleanEntry(entry));
   }
 
-  updateTarget(entry: TargetEntry): void {
-    const targets = this.targetsSubject.value.map(t => 
-      t.id === entry.id ? entry : t
-    );
-    this.updateTargets(targets);
+  async updateTarget(entry: TargetEntry): Promise<void> {
+    const userId = this.authService.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
+    if (!entry.id) throw new Error('Entry ID is required');
+
+    const docRef = doc(this.firestore, `users/${userId}/targets/${entry.id}`);
+    await setDoc(docRef, this.cleanEntry(entry));
   }
 
-  deleteTarget(id: string): void {
-    const targets = this.targetsSubject.value.filter(t => t.id !== id);
-    this.updateTargets(targets);
+  async deleteTarget(id: string): Promise<void> {
+    const userId = this.authService.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
+
+    const docRef = doc(this.firestore, `users/${userId}/targets/${id}`);
+    await deleteDoc(docRef);
   }
 
   // Actual Entry Methods
@@ -50,23 +119,31 @@ export class StockTrackerService {
     return this.actualsSubject.value;
   }
 
-  addActual(entry: ActualEntry): void {
-    const actuals = [...this.actualsSubject.value];
-    entry.id = this.generateId();
-    actuals.push(entry);
-    this.updateActuals(actuals);
+  async addActual(entry: ActualEntry): Promise<void> {
+    const userId = this.authService.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
+
+    const id = this.generateId();
+    entry.id = id;
+    const docRef = doc(this.firestore, `users/${userId}/actuals/${id}`);
+    await setDoc(docRef, this.cleanEntry(entry));
   }
 
-  updateActual(entry: ActualEntry): void {
-    const actuals = this.actualsSubject.value.map(a => 
-      a.id === entry.id ? entry : a
-    );
-    this.updateActuals(actuals);
+  async updateActual(entry: ActualEntry): Promise<void> {
+    const userId = this.authService.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
+    if (!entry.id) throw new Error('Entry ID is required');
+
+    const docRef = doc(this.firestore, `users/${userId}/actuals/${entry.id}`);
+    await setDoc(docRef, this.cleanEntry(entry));
   }
 
-  deleteActual(id: string): void {
-    const actuals = this.actualsSubject.value.filter(a => a.id !== id);
-    this.updateActuals(actuals);
+  async deleteActual(id: string): Promise<void> {
+    const userId = this.authService.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
+
+    const docRef = doc(this.firestore, `users/${userId}/actuals/${id}`);
+    await deleteDoc(docRef);
   }
 
   // Calculation Methods
@@ -88,59 +165,92 @@ export class StockTrackerService {
   }
 
   // Bulk operations
-  setTargets(targets: TargetEntry[]): void {
-    this.updateTargets(targets);
-  }
+  async setTargets(targets: TargetEntry[]): Promise<void> {
+    const userId = this.authService.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
 
-  setActuals(actuals: ActualEntry[]): void {
-    this.updateActuals(actuals);
-  }
-
-  clearAllData(): void {
-    this.updateTargets([]);
-    this.updateActuals([]);
-  }
-
-  // Private helper methods
-  private updateTargets(targets: TargetEntry[]): void {
-    this.targetsSubject.next(targets);
-    this.saveToStorage();
-  }
-
-  private updateActuals(actuals: ActualEntry[]): void {
-    this.actualsSubject.next(actuals);
-    this.saveToStorage();
-  }
-
-  private saveToStorage(): void {
-    try {
-      localStorage.setItem(this.TARGETS_KEY, JSON.stringify(this.targetsSubject.value));
-      localStorage.setItem(this.ACTUALS_KEY, JSON.stringify(this.actualsSubject.value));
-      localStorage.setItem(this.VERSION_KEY, this.CURRENT_VERSION);
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
-  }
-
-  private loadFromStorage(): void {
-    try {
-      const targetsData = localStorage.getItem(this.TARGETS_KEY);
-      const actualsData = localStorage.getItem(this.ACTUALS_KEY);
-      
-      if (targetsData) {
-        this.targetsSubject.next(JSON.parse(targetsData));
+    const batch = writeBatch(this.firestore);
+    
+    // Delete existing targets
+    const currentTargets = this.targetsSubject.value;
+    for (const target of currentTargets) {
+      if (target.id) {
+        const docRef = doc(this.firestore, `users/${userId}/targets/${target.id}`);
+        batch.delete(docRef);
       }
-      
-      if (actualsData) {
-        this.actualsSubject.next(JSON.parse(actualsData));
-      }
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
     }
+
+    // Add new targets
+    for (const target of targets) {
+      const id = target.id || this.generateId();
+      target.id = id;
+      const docRef = doc(this.firestore, `users/${userId}/targets/${id}`);
+      batch.set(docRef, this.cleanEntry(target));
+    }
+
+    await batch.commit();
+  }
+
+  async setActuals(actuals: ActualEntry[]): Promise<void> {
+    const userId = this.authService.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
+
+    const batch = writeBatch(this.firestore);
+    
+    // Delete existing actuals
+    const currentActuals = this.actualsSubject.value;
+    for (const actual of currentActuals) {
+      if (actual.id) {
+        const docRef = doc(this.firestore, `users/${userId}/actuals/${actual.id}`);
+        batch.delete(docRef);
+      }
+    }
+
+    // Add new actuals
+    for (const actual of actuals) {
+      const id = actual.id || this.generateId();
+      actual.id = id;
+      const docRef = doc(this.firestore, `users/${userId}/actuals/${id}`);
+      batch.set(docRef, this.cleanEntry(actual));
+    }
+
+    await batch.commit();
+  }
+
+  async clearAllData(): Promise<void> {
+    const userId = this.authService.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
+
+    const batch = writeBatch(this.firestore);
+
+    // Delete all targets
+    const targets = this.targetsSubject.value;
+    for (const target of targets) {
+      if (target.id) {
+        const docRef = doc(this.firestore, `users/${userId}/targets/${target.id}`);
+        batch.delete(docRef);
+      }
+    }
+
+    // Delete all actuals
+    const actuals = this.actualsSubject.value;
+    for (const actual of actuals) {
+      if (actual.id) {
+        const docRef = doc(this.firestore, `users/${userId}/actuals/${actual.id}`);
+        batch.delete(docRef);
+      }
+    }
+
+    await batch.commit();
+  }
+
+  // Helper to remove undefined values and prepare for Firestore
+  private cleanEntry<T extends TargetEntry | ActualEntry>(entry: T): Omit<T, 'id'> {
+    const { id, ...rest } = entry;
+    return rest as Omit<T, 'id'>;
   }
 
   private generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }
-

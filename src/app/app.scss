@@ -40,6 +40,12 @@
   }
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .theme-toggle {
   display: flex;
   align-items: center;
@@ -76,10 +82,103 @@
   }
 }
 
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+
+  .user-name {
+    color: white;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  ::ng-deep .p-avatar {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  ::ng-deep .p-button {
+    color: white !important;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+  }
+}
+
 .app-content {
   flex: 1;
   background: var(--surface-ground);
   overflow: hidden;
+}
+
+// Login Prompt Styles
+.login-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  background: linear-gradient(135deg, var(--surface-ground) 0%, var(--surface-section) 100%);
+}
+
+.login-card {
+  text-align: center;
+  padding: 3rem;
+  background: var(--surface-card);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+
+  .login-icon {
+    font-size: 4rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+  }
+
+  h2 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+    font-size: 1.75rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0 0 2rem 0;
+    color: var(--text-color-secondary);
+    font-size: 1rem;
+  }
+
+  .features {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--surface-border);
+
+    .feature {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+
+      i {
+        font-size: 1.5rem;
+        color: var(--primary-color);
+      }
+
+      span {
+        font-size: 0.85rem;
+        color: var(--text-color-secondary);
+      }
+    }
+  }
 }
 
 @media (max-width: 768px) {
@@ -89,8 +188,47 @@
 
   .logo-section {
     h1 {
+      font-size: 1.25rem;
+    }
+
+    i {
+      font-size: 1.5rem !important;
+    }
+  }
+
+  .header-actions {
+    gap: 0.5rem;
+  }
+
+  .user-section {
+    .user-name {
+      display: none;
+    }
+  }
+
+  .theme-toggle {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+
+    .login-icon {
+      font-size: 3rem;
+    }
+
+    h2 {
       font-size: 1.5rem;
+    }
+
+    .features {
+      flex-direction: column;
+      gap: 1rem;
+
+      .feature {
+        flex-direction: row;
+        gap: 0.75rem;
+      }
     }
   }
 }
-

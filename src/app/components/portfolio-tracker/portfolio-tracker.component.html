@@ -1,6 +1,14 @@
 <div class="portfolio-tracker-container">
   <p-toast position="top-right" [life]="3000"></p-toast>
 
+  <!-- Loading Spinner -->
+  @if (isLoading) {
+    <div class="loading-overlay">
+      <p-progressSpinner strokeWidth="4" animationDuration="1s"></p-progressSpinner>
+      <span>Loading your portfolio...</span>
+    </div>
+  }
+
   <!-- Custom Confirmation Modal - Clear All -->
   <div class="confirm-overlay" *ngIf="showConfirmModal" (click)="cancelClear()">
     <div class="confirm-modal" (click)="$event.stopPropagation()">
