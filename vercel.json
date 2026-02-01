@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "buildCommand": "cd stock-tracker-app && npm install && npm run build",
+  "outputDirectory": "stock-tracker-app/dist/stock-tracker-app/browser",
+  "installCommand": "echo 'Skipping root install'",
+  "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
