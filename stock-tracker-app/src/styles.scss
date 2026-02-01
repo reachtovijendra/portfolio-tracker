@@ -1,0 +1,374 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* PrimeNG base styles and icons */
+@import "primeicons/primeicons.css";
+@import "primeflex/primeflex.css";
+
+/* CSS Variables for Theme */
+:root, .light-theme {
+  --primary-color: #3B82F6;
+  --primary-color-text: #ffffff;
+  --surface-ground: #f8f9fa;
+  --surface-card: #ffffff;
+  --surface-border: #dee2e6;
+  --text-color: #212529;
+  --text-color-secondary: #6c757d;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  --blue-50: #e3f2fd;
+  --blue-500: #2196F3;
+  --blue-600: #1E88E5;
+  
+  --green-50: #e8f5e9;
+  --green-500: #4CAF50;
+  --green-600: #43A047;
+  
+  --red-50: #ffebee;
+  --red-500: #f44336;
+  --red-600: #e53935;
+
+  --table-header-bg: #1e3a5f;
+  --table-header-text: #ffffff;
+  --table-row-bg: #ffffff;
+  --table-row-alt-bg: #f8f9fa;
+  --input-bg: #f8fff8;
+}
+
+/* Dark Theme */
+.dark-theme {
+  --primary-color: #60a5fa;
+  --primary-color-text: #ffffff;
+  --surface-ground: #1a1a2e;
+  --surface-card: #16213e;
+  --surface-border: #2d3748;
+  --text-color: #e2e8f0;
+  --text-color-secondary: #a0aec0;
+  
+  --blue-50: #1e3a5f;
+  --blue-500: #60a5fa;
+  --blue-600: #3b82f6;
+  
+  --green-50: #1a332a;
+  --green-500: #34d399;
+  --green-600: #10b981;
+  
+  --red-50: #3d1f1f;
+  --red-500: #f87171;
+  --red-600: #ef4444;
+
+  --table-header-bg: #0f172a;
+  --table-header-text: #e2e8f0;
+  --table-row-bg: #1e293b;
+  --table-row-alt-bg: #162032;
+  --input-bg: #1e293b;
+}
+
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+}
+
+/* Dark-theme fix for PrimeNG overlays (e.g., MultiSelect) */
+body.dark-theme {
+  /* Specific panel for Year dropdown */
+  .year-panel {
+    background: var(--surface-card) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--surface-border) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+
+    .p-multiselect-header {
+      background: var(--surface-card) !important;
+      border-bottom: 1px solid var(--surface-border) !important;
+    }
+
+    .p-multiselect-items {
+      background: var(--surface-card) !important;
+
+      .p-multiselect-item {
+        color: var(--text-color) !important;
+
+        &:hover {
+          background: var(--surface-ground) !important;
+        }
+
+        &.p-highlight {
+          background: rgba(96, 165, 250, 0.16) !important;
+          color: var(--text-color) !important;
+        }
+      }
+    }
+  }
+
+  /* Multiselect trigger */
+  .p-multiselect {
+    background: var(--surface-card) !important;
+    border: 1px solid var(--surface-border) !important;
+    color: var(--text-color) !important;
+
+    .p-multiselect-label {
+      color: var(--text-color) !important;
+    }
+
+    .p-multiselect-trigger {
+      color: var(--text-color-secondary) !important;
+    }
+  }
+
+  .p-multiselect-panel {
+    background: var(--surface-card) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--surface-border) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  .p-multiselect-header {
+    background: var(--surface-card) !important;
+    border-bottom: 1px solid var(--surface-border) !important;
+
+    .p-multiselect-filter-container {
+      .p-multiselect-filter {
+        background: var(--surface-ground) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--surface-border) !important;
+
+        &::placeholder {
+          color: var(--text-color-secondary) !important;
+        }
+      }
+
+      .p-multiselect-filter-icon {
+        color: var(--text-color-secondary) !important;
+      }
+    }
+  }
+
+  .p-multiselect-items {
+    background: var(--surface-card) !important;
+
+    .p-multiselect-item {
+      color: var(--text-color) !important;
+
+      &:hover {
+        background: var(--surface-ground) !important;
+      }
+
+      &.p-highlight {
+        background: rgba(96, 165, 250, 0.16) !important;
+        color: var(--text-color) !important;
+      }
+
+      .p-checkbox .p-checkbox-box {
+        border: 2px solid var(--surface-border) !important;
+
+        &.p-highlight {
+          background: var(--primary-color) !important;
+          border-color: var(--primary-color) !important;
+        }
+
+        .p-checkbox-icon {
+          color: white !important;
+        }
+      }
+    }
+  }
+}
+
+/* PrimeNG Confirm Dialog Fix */
+.p-dialog-mask {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 9999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.p-dialog {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  min-width: 350px;
+  max-width: 90vw;
+}
+
+.p-dialog-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.p-dialog-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.p-dialog-content {
+  padding: 1.5rem;
+}
+
+.p-dialog-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.p-confirm-dialog-icon {
+  font-size: 1.5rem;
+  color: #dc3545;
+  margin-right: 1rem;
+}
+
+/* Toast Notifications Styling */
+.p-toast {
+  z-index: 10000 !important;
+  
+  .p-toast-message {
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    
+    &.p-toast-message-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: none;
+      color: white;
+      
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white;
+      }
+      
+      .p-toast-summary {
+        color: white;
+        font-weight: 600;
+      }
+      
+      .p-toast-detail {
+        color: rgba(255, 255, 255, 0.9);
+      }
+    }
+    
+    &.p-toast-message-info {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border: none;
+      color: white;
+      
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white;
+      }
+      
+      .p-toast-summary {
+        color: white;
+        font-weight: 600;
+      }
+      
+      .p-toast-detail {
+        color: rgba(255, 255, 255, 0.9);
+      }
+    }
+    
+    &.p-toast-message-warn {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      border: none;
+      color: white;
+      
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white;
+      }
+      
+      .p-toast-summary {
+        color: white;
+        font-weight: 600;
+      }
+      
+      .p-toast-detail {
+        color: rgba(255, 255, 255, 0.9);
+      }
+    }
+    
+    &.p-toast-message-error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      border: none;
+      color: white;
+      
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white;
+      }
+      
+      .p-toast-summary {
+        color: white;
+        font-weight: 600;
+      }
+      
+      .p-toast-detail {
+        color: rgba(255, 255, 255, 0.9);
+      }
+    }
+  }
+  
+  .p-toast-message-content {
+    padding: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .p-toast-message-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  
+  .p-toast-message-text {
+    flex: 1;
+  }
+  
+  .p-toast-summary {
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .p-toast-detail {
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+  
+  .p-toast-icon-close {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+  }
+}
