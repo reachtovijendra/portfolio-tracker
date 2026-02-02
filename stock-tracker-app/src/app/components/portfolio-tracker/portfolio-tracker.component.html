@@ -107,7 +107,7 @@
         <th style="width: 50px" class="text-center">Month</th>
         <th style="width: 170px" class="text-center header-dual">
           <div class="dual-header">
-            <span>Investment</span>
+            <span>Initial Contributions</span>
             <div class="sub-headers">
               <span class="target-label">Target</span>
               <span class="actual-label">Actual</span>
@@ -116,7 +116,7 @@
         </th>
         <th style="width: 140px" class="text-center header-dual">
           <div class="dual-header">
-            <span>Added</span>
+            <span>Contributions Added</span>
             <div class="sub-headers">
               <span class="target-label">Target</span>
               <span class="actual-label">Actual</span>
@@ -134,7 +134,7 @@
         </th>
         <th style="width: 170px" class="text-center header-dual">
           <div class="dual-header">
-            <span>Total Invested</span>
+            <span>Total Value EOM</span>
             <div class="sub-headers">
               <span class="target-label">Target</span>
               <span class="actual-label">Actual</span>
@@ -159,16 +159,8 @@
             </div>
           </div>
         </th>
-        <th style="width: 170px" class="text-center header-dual">
-          <div class="dual-header">
-            <span>Total</span>
-            <div class="sub-headers">
-              <span class="target-label">Target</span>
-              <span class="actual-label">Actual</span>
-            </div>
-          </div>
-        </th>
-        <th style="width: 90px" class="text-right header-variance">Variance</th>
+        <th style="width: 120px" class="text-right header-overall-profit">Overall Profit</th>
+        <th style="width: 130px" class="text-right header-variance">Variance From Goal</th>
       </tr>
     </ng-template>
 
@@ -221,25 +213,35 @@
           </div>
         </td>
         
-        <!-- Principal: Target / Actual (calculated) -->
+        <!-- Principal: Target / Actual (calculated - cumulative) -->
         <td class="dual-cell">
           <div class="dual-value">
             <span class="target-value">{{ formatCurrency(row.principal) }}</span>
-            <span class="actual-value" [ngClass]="getActualClass(row.actualInvestment, row.actualAdded)">
-              {{ getActualTotalInvestment(row.actualInvestment, row.actualAdded) }}
+            <span class="actual-value" [ngClass]="getActualPrincipalClass(row)">
+              {{ getActualPrincipalDisplay(row) }}
             </span>
           </div>
         </td>
         
-        <!-- Total Investment: Target / Actual (calculated) -->
+        <!-- Total Value EOM: Target / Actual (editable) -->
         <td class="dual-cell">
           <div class="dual-value">
-            <span class="target-value">{{ formatCurrency(row.totalInvestment) }}</span>
-            <span class="actual-value" [ngClass]="getActualClass(row.actualInvestment, row.actualAdded)">
-              {{ getActualTotalInvestment(row.actualInvestment, row.actualAdded) }}
-            </span>
+            <span class="target-value">{{ formatCurrency(row.total) }}</span>
+            <div class="actual-input-wrapper">
+              <p-inputNumber 
+                [(ngModel)]="row.actualTotal" 
+                mode="decimal"
+                [minFractionDigits]="0"
+                [maxFractionDigits]="0"
+                [allowEmpty]="true"
+                placeholder="-"
+                (onBlur)="onActualChange(row)"
+                styleClass="actual-input">
+              </p-inputNumber>
+            </div>
           </div>
         </td>
+        
         <!-- Return %: Target / Actual (calculated) -->
         <td class="dual-cell">
           <div class="dual-value">
@@ -259,25 +261,15 @@
             </span>
           </div>
         </td>
-        
-        <!-- Total: Target / Actual (editable) -->
-        <td class="dual-cell">
-          <div class="dual-value">
-            <span class="target-value">{{ formatCurrency(row.total) }}</span>
-            <div class="actual-input-wrapper">
-              <p-inputNumber 
-                [(ngModel)]="row.actualTotal" 
-                mode="decimal"
-                [minFractionDigits]="0"
-                [maxFractionDigits]="0"
-                [allowEmpty]="true"
-                placeholder="-"
-                (onBlur)="onActualChange(row)"
-                styleClass="actual-input">
-              </p-inputNumber>
-            </div>
-          </div>
+        <!-- Overall Profit: Actual Total Value EOM - Actual Principal -->
+        <td class="text-right font-semibold" 
+            [ngClass]="getOverallProfitClass(row)">
+          <span *ngIf="row.actualTotal !== null && row.actualInvestment !== null && row.actualAdded !== null">
+            {{ getOverallProfit(row) > 0 ? '+' : '' }}{{ formatCurrency(getOverallProfit(row)) }}
+          </span>
+          <span *ngIf="row.actualTotal === null || row.actualInvestment === null || row.actualAdded === null">-</span>
         </td>
+        <!-- Variance From Goal -->
         <td class="text-right font-semibold" 
             [ngClass]="getVarianceClass(row.actualTotal, row.total)">
           <span *ngIf="row.actualTotal !== null">
@@ -293,7 +285,7 @@
   <div class="summary-footer">
     <div class="summary-item">
       <span class="label">Starting Investment:</span>
-      <span class="value">$100,000</span>
+      <span class="value">{{ getActualInitialContribution() }}</span>
     </div>
     <div class="summary-item">
       <span class="label">Monthly Addition:</span>

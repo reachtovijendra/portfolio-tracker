@@ -280,6 +280,14 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     }).format(value);
   }
 
+  getActualInitialContribution(): string {
+    const firstRow = this.portfolioData[0];
+    if (firstRow && firstRow.actualInvestment !== null) {
+      return '$' + this.formatCurrency(firstRow.actualInvestment);
+    }
+    return '$100,000'; // Default target value
+  }
+
   getMonthName(month: number): string {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -299,6 +307,52 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     return '';
   }
 
+  // Overall Profit = Actual Total Value EOM - Cumulative Actual Principal
+  getOverallProfit(row: PortfolioRow): number {
+    if (row.actualTotal === null) return 0;
+    const cumulativePrincipal = this.getCumulativeActualPrincipal(row);
+    if (cumulativePrincipal === null) return 0;
+    return row.actualTotal - cumulativePrincipal;
+  }
+
+  getOverallProfitClass(row: PortfolioRow): string {
+    if (row.actualTotal === null) return '';
+    const cumulativePrincipal = this.getCumulativeActualPrincipal(row);
+    if (cumulativePrincipal === null) return '';
+    const profit = this.getOverallProfit(row);
+    if (profit > 0) return 'positive';
+    if (profit < 0) return 'negative';
+    return '';
+  }
+
+  // Calculate cumulative actual principal: Initial Investment + all Added amounts up to this row
+  getCumulativeActualPrincipal(row: PortfolioRow): number | null {
+    // Find the index of this row
+    const rowIndex = this.portfolioData.findIndex(r => r.year === row.year && r.month === row.month);
+    if (rowIndex === -1) return null;
+    
+    // Get initial investment from first row (Jan 2025)
+    const firstRow = this.portfolioData[0];
+    if (firstRow.actualInvestment === null) return null;
+    
+    let cumulativePrincipal = firstRow.actualInvestment;
+    
+    // Add all actualAdded values from first row up to and including current row
+    for (let i = 0; i <= rowIndex; i++) {
+      const currentRow = this.portfolioData[i];
+      if (currentRow.actualAdded === null) return null;
+      cumulativePrincipal += currentRow.actualAdded;
+    }
+    
+    return cumulativePrincipal;
+  }
+
+  getActualPrincipalDisplay(row: PortfolioRow): string {
+    const principal = this.getCumulativeActualPrincipal(row);
+    if (principal === null) return '-';
+    return this.formatCurrency(principal);
+  }
+
   getActualTotalInvestment(actualInvestment: number | null, actualAdded: number | null): string {
     if (actualInvestment === null || actualAdded === null) {
       return '-';
@@ -313,31 +367,33 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     return 'has-data';
   }
 
+  getActualPrincipalClass(row: PortfolioRow): string {
+    const principal = this.getCumulativeActualPrincipal(row);
+    if (principal === null) return 'no-data';
+    return 'has-data';
+  }
+
   getActualProfit(row: PortfolioRow): string {
-    if (row.actualTotal === null || row.actualInvestment === null || row.actualAdded === null) {
-      return '-';
-    }
-    const actualTotalInvestment = row.actualInvestment + row.actualAdded;
-    const profit = row.actualTotal - actualTotalInvestment;
+    if (row.actualTotal === null) return '-';
+    const cumulativePrincipal = this.getCumulativeActualPrincipal(row);
+    if (cumulativePrincipal === null) return '-';
+    const profit = row.actualTotal - cumulativePrincipal;
     return this.formatCurrency(profit);
   }
 
   getActualReturnPercent(row: PortfolioRow): string {
-    if (row.actualTotal === null || row.actualInvestment === null || row.actualAdded === null) {
-      return '-';
-    }
-    const actualTotalInvestment = row.actualInvestment + row.actualAdded;
-    if (actualTotalInvestment === 0) return '0%';
-    const returnPercent = ((row.actualTotal - actualTotalInvestment) / actualTotalInvestment) * 100;
+    if (row.actualTotal === null) return '-';
+    const cumulativePrincipal = this.getCumulativeActualPrincipal(row);
+    if (cumulativePrincipal === null || cumulativePrincipal === 0) return '-';
+    const returnPercent = ((row.actualTotal - cumulativePrincipal) / cumulativePrincipal) * 100;
     return returnPercent.toFixed(1) + '%';
   }
 
   getProfitClass(row: PortfolioRow): string {
-    if (row.actualTotal === null || row.actualInvestment === null || row.actualAdded === null) {
-      return 'no-data';
-    }
-    const actualTotalInvestment = row.actualInvestment + row.actualAdded;
-    const profit = row.actualTotal - actualTotalInvestment;
+    if (row.actualTotal === null) return 'no-data';
+    const cumulativePrincipal = this.getCumulativeActualPrincipal(row);
+    if (cumulativePrincipal === null) return 'no-data';
+    const profit = row.actualTotal - cumulativePrincipal;
     if (profit > 0) return 'profit-positive';
     if (profit < 0) return 'profit-negative';
     return 'has-data';
@@ -350,13 +406,16 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
   }
 
   getActualTotalInvested(): number {
-    const filledRows = this.filteredData.filter(row => 
-      row.actualInvestment !== null && row.actualAdded !== null
+    // Find the latest row with actual data
+    const filledRows = this.portfolioData.filter(row => 
+      row.actualTotal !== null
     );
     if (filledRows.length === 0) return 0;
     
+    // Get the cumulative principal of the latest filled row
     const latestRow = filledRows[filledRows.length - 1];
-    return (latestRow.actualInvestment ?? 0) + (latestRow.actualAdded ?? 0);
+    const cumulativePrincipal = this.getCumulativeActualPrincipal(latestRow);
+    return cumulativePrincipal ?? 0;
   }
 
   getLatestActualTotal(): number {
