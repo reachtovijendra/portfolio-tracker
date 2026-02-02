@@ -110,6 +110,7 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   min-height: 200px;
+  margin-top: 0.75rem;
 
   ::ng-deep {
     .p-confirm-dialog {
@@ -154,8 +155,11 @@
 
 
   .action-bar {
-    display: flex;
-    gap: 1.5rem;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    align-items: center !important;
     padding: 0.75rem 1rem;
     background: var(--surface-card);
     border: 1px solid var(--surface-border);
@@ -163,6 +167,46 @@
     margin-bottom: 1rem;
     flex-shrink: 0;
     flex-grow: 0;
+
+    .action-buttons {
+      display: flex;
+      gap: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .initial-contributions {
+      display: flex !important;
+      flex-direction: row !important;
+      gap: 1.5rem;
+      align-items: center;
+      flex-shrink: 0;
+
+      .contribution-input {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+
+        label {
+          font-weight: 500;
+          color: var(--text-color);
+          white-space: nowrap;
+          font-size: 0.85rem;
+        }
+
+        ::ng-deep {
+          .contribution-input-field {
+            width: 130px;
+            
+            .p-inputnumber-input {
+              width: 100%;
+              text-align: right;
+              padding: 0.4rem 0.5rem;
+            }
+          }
+        }
+      }
+    }
 
     ::ng-deep {
       .p-button .p-button-icon {
@@ -460,6 +504,50 @@
     .value {
       font-weight: 600;
       color: var(--primary-color);
+    }
+  }
+}
+
+// Compact horizontal actual summary (same style as summary-footer)
+.actual-summary-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  border-left: 4px solid var(--green-500);
+  flex-shrink: 0;
+  flex-grow: 0;
+
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .label {
+      color: var(--text-color-secondary);
+      font-size: 0.85rem;
+    }
+
+    .value {
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 0.9rem;
+
+      &.highlight {
+        color: var(--primary-color);
+      }
+
+      &.positive {
+        color: var(--green-500);
+      }
+
+      &.negative {
+        color: var(--red-500);
+      }
     }
   }
 }

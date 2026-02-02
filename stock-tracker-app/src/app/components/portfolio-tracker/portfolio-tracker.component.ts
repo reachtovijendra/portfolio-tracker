@@ -47,6 +47,11 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
   yearOptions: { label: string; value: number }[] = [];
   selectedYears: number[] = [];
   isLoading = true;
+  
+  // Initial contributions
+  targetInitialContribution: number = 100000;
+  actualInitialContribution: number | null = null;
+  
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -55,6 +60,9 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    // Load initial contributions from localStorage
+    this.loadInitialContributions();
+    
     // Subscribe to loading state
     this.stockTrackerService.loading$
       .pipe(takeUntil(this.destroy$))
@@ -110,7 +118,7 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
   private async generateTenYearProjection(): Promise<void> {
     const targets: TargetEntry[] = [];
     
-    const startingInvestment = 100000;
+    const startingInvestment = this.targetInitialContribution;
     const monthlyAddition = 3500;
     const monthlyReturnPercent = 1.6;
     
@@ -151,6 +159,57 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
     await this.stockTrackerService.setTargets(targets);
   }
 
+  async onTargetInitialChange(): Promise<void> {
+    // Save to localStorage
+    localStorage.setItem('targetInitialContribution', this.targetInitialContribution.toString());
+    // Regenerate projections with new target
+    await this.generateTenYearProjection();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Updated',
+      detail: 'Target projections recalculated',
+      life: 2000
+    });
+  }
+
+  async onActualInitialChange(): Promise<void> {
+    // Save to localStorage
+    if (this.actualInitialContribution !== null) {
+      localStorage.setItem('actualInitialContribution', this.actualInitialContribution.toString());
+    } else {
+      localStorage.removeItem('actualInitialContribution');
+    }
+    
+    // Update the first row's actual investment
+    if (this.portfolioData.length > 0) {
+      const firstRow = this.portfolioData[0];
+      firstRow.actualInvestment = this.actualInitialContribution;
+      
+      // Save using the existing onActualChange method
+      await this.onActualChange(firstRow, false);
+    }
+    
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Updated',
+      detail: 'Actual initial contribution updated',
+      life: 2000
+    });
+  }
+
+  private loadInitialContributions(): void {
+    // Load from localStorage
+    const savedTarget = localStorage.getItem('targetInitialContribution');
+    const savedActual = localStorage.getItem('actualInitialContribution');
+    
+    if (savedTarget) {
+      this.targetInitialContribution = parseFloat(savedTarget);
+    }
+    if (savedActual) {
+      this.actualInitialContribution = parseFloat(savedActual);
+    }
+  }
+
   private loadPortfolioData(targets: TargetEntry[], actuals: any[]): void {
     const actualsMap = new Map<string, { investment: number, added: number, total: number }>();
     actuals.forEach(a => {
@@ -181,6 +240,19 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
         if (a.year !== b.year) return a.year - b.year;
         return a.month - b.month;
       });
+
+    // Sync first row's actualInvestment with actualInitialContribution
+    if (this.portfolioData.length > 0) {
+      const firstRow = this.portfolioData[0];
+      
+      // If we have an actual initial contribution set, use it for the first row
+      if (this.actualInitialContribution !== null) {
+        firstRow.actualInvestment = this.actualInitialContribution;
+      } else if (firstRow.actualInvestment !== null) {
+        // If first row has investment but actualInitialContribution is null, sync it
+        this.actualInitialContribution = firstRow.actualInvestment;
+      }
+    }
 
     const uniqueYears = [...new Set(this.portfolioData.map(row => row.year))].sort();
     this.yearOptions = uniqueYears.map(year => ({ label: String(year), value: year }));
@@ -281,11 +353,10 @@ export class PortfolioTrackerComponent implements OnInit, OnDestroy {
   }
 
   getActualInitialContribution(): string {
-    const firstRow = this.portfolioData[0];
-    if (firstRow && firstRow.actualInvestment !== null) {
-      return '$' + this.formatCurrency(firstRow.actualInvestment);
+    if (this.actualInitialContribution !== null) {
+      return '$' + this.formatCurrency(this.actualInitialContribution);
     }
-    return '$100,000'; // Default target value
+    return '$' + this.formatCurrency(this.targetInitialContribution);
   }
 
   getMonthName(month: number): string {

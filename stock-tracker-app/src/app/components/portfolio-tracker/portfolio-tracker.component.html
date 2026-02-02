@@ -43,34 +43,64 @@
     </div>
   </div>
 
-  <div class="action-bar">
-    <input 
-      type="file" 
-      #fileInput 
-      accept=".xlsx,.xls" 
-      style="display: none" 
-      (change)="onFileSelect($event)">
-    <button 
-      pButton 
-      type="button" 
-      label="Import from Excel" 
-      icon="pi pi-upload" 
-      class="p-button-text btn-import"
-      (click)="fileInput.click()"></button>
-    <button 
-      pButton 
-      type="button" 
-      label="Export to Excel" 
-      icon="pi pi-file-excel" 
-      class="p-button-text btn-export"
-      (click)="exportToExcel()"></button>
-    <button 
-      pButton 
-      type="button" 
-      label="Clear All Data" 
-      icon="pi pi-trash" 
-      class="p-button-text btn-clear"
-      (click)="openClearConfirm()"></button>
+  <div class="action-bar" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: nowrap;">
+    <div class="action-buttons" style="display: flex; gap: 1.5rem;">
+      <input 
+        type="file" 
+        #fileInput 
+        accept=".xlsx,.xls" 
+        style="display: none" 
+        (change)="onFileSelect($event)">
+      <button 
+        pButton 
+        type="button" 
+        label="Import from Excel" 
+        icon="pi pi-upload" 
+        class="p-button-text btn-import"
+        (click)="fileInput.click()"></button>
+      <button 
+        pButton 
+        type="button" 
+        label="Export to Excel" 
+        icon="pi pi-file-excel" 
+        class="p-button-text btn-export"
+        (click)="exportToExcel()"></button>
+      <button 
+        pButton 
+        type="button" 
+        label="Clear All Data" 
+        icon="pi pi-trash" 
+        class="p-button-text btn-clear"
+        (click)="openClearConfirm()"></button>
+    </div>
+    <div class="initial-contributions" style="display: flex; flex-direction: row; gap: 1.5rem; align-items: center;">
+      <div class="contribution-input" style="display: flex; align-items: center; gap: 0.5rem;">
+        <label style="white-space: nowrap;">Target Initial:</label>
+        <p-inputNumber 
+          [(ngModel)]="targetInitialContribution" 
+          mode="currency"
+          currency="USD"
+          locale="en-US"
+          [minFractionDigits]="0"
+          [maxFractionDigits]="0"
+          (onBlur)="onTargetInitialChange()"
+          styleClass="contribution-input-field">
+        </p-inputNumber>
+      </div>
+      <div class="contribution-input" style="display: flex; align-items: center; gap: 0.5rem;">
+        <label style="white-space: nowrap;">Actual Initial:</label>
+        <p-inputNumber 
+          [(ngModel)]="actualInitialContribution" 
+          mode="currency"
+          currency="USD"
+          locale="en-US"
+          [minFractionDigits]="0"
+          [maxFractionDigits]="0"
+          (onBlur)="onActualInitialChange()"
+          styleClass="contribution-input-field">
+        </p-inputNumber>
+      </div>
+    </div>
   </div>
 
   <div class="table-container">
@@ -185,10 +215,9 @@
                 [minFractionDigits]="0"
                 [maxFractionDigits]="0"
                 [allowEmpty]="true"
-                [disabled]="!isFirstMonth(row)"
+                [disabled]="true"
                 placeholder="-"
-                (onBlur)="onActualChange(row)"
-                styleClass="actual-input">
+                styleClass="actual-input disabled-input">
               </p-inputNumber>
             </div>
           </div>
@@ -301,40 +330,35 @@
     </div>
   </div>
 
-  <!-- Actual Performance Summary -->
-  <div class="actual-summary" *ngIf="getFilledRowsCount() > 0">
-    <h3>Actual Performance Summary</h3>
-    <div class="actual-summary-grid">
-      <div class="actual-item">
-        <span class="label">Months with Data:</span>
-        <span class="value">{{ getFilledRowsCount() }}</span>
-      </div>
-      <div class="actual-item">
-        <span class="label">Total Invested (Actual):</span>
-        <span class="value">{{ formatCurrency(getActualTotalInvested()) }}</span>
-      </div>
-      <div class="actual-item">
-        <span class="label">Current Portfolio Value:</span>
-        <span class="value highlight">{{ formatCurrency(getLatestActualTotal()) }}</span>
-      </div>
-      <div class="actual-item">
-        <span class="label">Total Profit/Loss:</span>
-        <span class="value" [ngClass]="getTotalProfitClass()">{{ formatCurrency(getTotalActualProfit()) }}</span>
-      </div>
-      <div class="actual-item">
-        <span class="label">Overall Return:</span>
-        <span class="value" [ngClass]="getTotalProfitClass()">{{ getOverallReturnPercent() }}%</span>
-      </div>
-      <div class="actual-item">
-        <span class="label">vs Target Variance:</span>
-        <span class="value" [ngClass]="getOverallVarianceClass()">
-          {{ getOverallVariance() > 0 ? '+' : '' }}{{ formatCurrency(getOverallVariance()) }}
-        </span>
-      </div>
-      <div class="actual-item">
-        <span class="label">Avg Yearly Return:</span>
-        <span class="value" [ngClass]="getTotalProfitClass()">{{ getAverageYearlyReturn() }}%</span>
-      </div>
+  <!-- Actual Performance Summary - Compact horizontal layout -->
+  <div class="actual-summary-compact" *ngIf="getFilledRowsCount() > 0">
+    <div class="summary-item">
+      <span class="label">Months:</span>
+      <span class="value">{{ getFilledRowsCount() }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="label">Total Invested:</span>
+      <span class="value">{{ formatCurrency(getActualTotalInvested()) }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="label">Portfolio Value:</span>
+      <span class="value highlight">{{ formatCurrency(getLatestActualTotal()) }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="label">Profit/Loss:</span>
+      <span class="value" [ngClass]="getTotalProfitClass()">{{ formatCurrency(getTotalActualProfit()) }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="label">Return:</span>
+      <span class="value" [ngClass]="getTotalProfitClass()">{{ getOverallReturnPercent() }}%</span>
+    </div>
+    <div class="summary-item">
+      <span class="label">vs Target:</span>
+      <span class="value" [ngClass]="getOverallVarianceClass()">{{ getOverallVariance() > 0 ? '+' : '' }}{{ formatCurrency(getOverallVariance()) }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="label">Avg Yearly:</span>
+      <span class="value" [ngClass]="getTotalProfitClass()">{{ getAverageYearlyReturn() }}%</span>
     </div>
   </div>
 </div>
